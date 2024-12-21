@@ -1,6 +1,6 @@
 # groupssh 
 
-- groupssh is a golang library for defining groups and making bulk ssh connections to those groups.
+- groupssh is a Go library for defining groups and establishing bulk SSH connections to those groups.
 - groupssh was inspired by the Group feature of [fabric](https://github.com/fabric/fabric).
 - Since this is a single-file library, please copy and customize the necessary parts according to your environment.
 
