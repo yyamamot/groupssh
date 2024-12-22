@@ -12,8 +12,8 @@
 - Put(local, remote string)
 - Get(remote, local string)
   - The `local` variable supports the following placeholders:
-     - {host}: Replaced with the hostname of the destination
-     - {port}: Replaced with the port number of the destination
+     - {host}: Replaced with the hostname of the remote host
+     - {port}: Replaced with the port number of the remote host
 ## Example
 
 ### New(): create a new groupssh instance
