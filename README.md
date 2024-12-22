@@ -113,9 +113,9 @@ func main() {
 
 /*
 $ go run ./examples/put.go
-Output from host3: File /tmp/hello processed to hello
-Output from host2: File /tmp/hello processed to hello
-Output from host1: File /tmp/hello processed to hello
+Output from host2: Processed local file hello to remote file /tmp/hello
+Output from host1: Processed local file hello to remote file /tmp/hello
+Output from host3: Processed local file hello to remote file /tmp/hello
 
 # host1
 root@77dd91fdf86f:/app# cat /tmp/hello
@@ -146,9 +146,9 @@ func main() {
 
 /*
 $ go run ./examples/get.go
-Output from host2: File /etc/hostname processed to /tmp/host2-232-hostname
-Output from host1: File /etc/hostname processed to /tmp/host1-231-hostname
-Output from host3: File /etc/hostname processed to /tmp/host3-233-hostname
+Output from host3: Processed remote file /etc/hostname to local file /tmp/host3-233-hostname
+Output from host1: Processed remote file /etc/hostname to local file /tmp/host1-231-hostname
+Output from host2: Processed remote file /etc/hostname to local file /tmp/host2-232-hostname
 
 $ ls /tmp/host*
 /tmp/host1-231-hostname /tmp/host2-232-hostname /tmp/host3-233-hostname

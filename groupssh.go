@@ -131,7 +131,7 @@ type Result struct {
 	Error   error
 }
 
-func (p *GroupSsh) connectAndExecute(config SshConfig, remote, local string, action func(*sftp.Client, string, string) error) Result {
+func (p *GroupSsh) getFile(config SshConfig, remote, local string) Result {
 	client, err := ssh.Dial("tcp", config.sshAddr(), config.clientConfig())
 	if err != nil {
 		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
@@ -144,50 +144,57 @@ func (p *GroupSsh) connectAndExecute(config SshConfig, remote, local string, act
 	}
 	defer sftpClient.Close()
 
-	err = action(sftpClient, remote, local)
+	remoteFile, err := sftpClient.Open(remote)
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+	defer remoteFile.Close()
+
+	localFile, err := os.Create(local)
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+	defer localFile.Close()
+
+	_, err = io.Copy(localFile, remoteFile)
 	if err != nil {
 		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
 	}
 
-	return Result{Host: config.Host, AltHost: config.AltHost, Stdout: fmt.Sprintf("File %s processed to %s\n", remote, local)}
-}
-
-func (p *GroupSsh) getFile(config SshConfig, remote, local string) Result {
-	return p.connectAndExecute(config, remote, local, func(sftpClient *sftp.Client, remote, local string) error {
-		remoteFile, err := sftpClient.Open(remote)
-		if err != nil {
-			return err
-		}
-		defer remoteFile.Close()
-
-		localFile, err := os.Create(local)
-		if err != nil {
-			return err
-		}
-		defer localFile.Close()
-
-		_, err = io.Copy(localFile, remoteFile)
-		return err
-	})
+	return Result{Host: config.Host, AltHost: config.AltHost, Stdout: fmt.Sprintf("Processed remote file %s to local file %s\n", remote, local)}
 }
 
 func (p *GroupSsh) putFile(config SshConfig, remote, local string) Result {
-	return p.connectAndExecute(config, remote, local, func(sftpClient *sftp.Client, remote, local string) error {
-		localFile, err := os.Open(local)
-		if err != nil {
-			return err
-		}
-		defer localFile.Close()
+	client, err := ssh.Dial("tcp", config.sshAddr(), config.clientConfig())
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+	defer client.Close()
 
-		remoteFile, err := sftpClient.Create(remote)
-		if err != nil {
-			return err
-		}
-		defer remoteFile.Close()
+	sftpClient, err := sftp.NewClient(client)
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+	defer sftpClient.Close()
 
-		_, err = io.Copy(remoteFile, localFile)
-		return err
-	})
+	localFile, err := os.Open(local)
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+	defer localFile.Close()
+
+	remoteFile, err := sftpClient.Create(remote)
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+	defer remoteFile.Close()
+
+	_, err = io.Copy(remoteFile, localFile)
+	if err != nil {
+		return Result{Host: config.Host, AltHost: config.AltHost, Error: err}
+	}
+
+	return Result{Host: config.Host, AltHost: config.AltHost, Stdout: fmt.Sprintf("Processed local file %s to remote file %s\n", local, remote)}
 }
 
 func (p *GroupSsh) Get(remote, local string) []Result {
@@ -270,7 +277,13 @@ func (p *GroupSsh) executeCommand(config SshConfig, command string) Result {
 
 	err = session.Run(command)
 	if err != nil {
-		return Result{Host: config.Host, AltHost: config.AltHost, Error: fmt.Errorf("failed to create session: %w", err)}
+		return Result{
+			Host:    config.Host,
+			AltHost: config.AltHost,
+			Stdout:  stdoutBuf.String(),
+			Stderr:  stderrBuf.String(),
+			Error:   err,
+		}
 	}
 	defer session.Close()
 
